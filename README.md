@@ -1,160 +1,230 @@
 # Bank-Route
+### AI-Driven Classification and Priority-Based Routing of Banking Customer Complaints
 
-**AI-driven classification and priority-based routing of banking customer complaints.**
+Bank-Route is a machine learning project that analyzes customer complaints written in plain English, predicts their financial product category, estimates their priority, and suggests the appropriate banking department.
 
-Bank-Route reads a customer complaint written in plain English, predicts which financial product it is about, and flags how urgent it is, so that serious cases such as fraud or unauthorized transactions can reach the right team first.
-
-Built as a Machine Learning course project at Sukkur IBA University (Instructor: Dr Ismail Mangrio).
-
----
-
-## The Problem
-
-Banks receive thousands of complaints every day. Staff read each one manually, decide its type and urgency, and forward it to a department. This is slow, and different employees make different decisions. Urgent cases can sit in the queue.
-
-## The Solution
-
-A supervised machine learning pipeline that takes the complaint text and predicts:
-
-1. **Category**: which financial product the complaint is about (for example Mortgage or Credit card).
-2. **Priority**: High, Medium or Low.
-3. **Department**: where the complaint should be routed.
-
-```
-Complaint text -> Text cleaning -> TF-IDF -> ML models -> Category + Priority -> Department
-```
-
-The system only **suggests** a result to staff. The final decision stays with a human.
+**Institution:** Sukkur IBA University  
+**Course:** Machine Learning  
+**Instructor:** Dr. Ismail Mangrio
 
 ---
 
-## Results
+## 1. Problem Statement
 
-Dataset split: 80% training (13,496 complaints), 20% testing (3,374 complaints).
+Banks receive thousands of customer complaints that require manual classification, priority assessment, and department assignment.
 
-### Category prediction (9 classes)
+This process can be time-consuming and inconsistent, potentially delaying urgent cases involving fraud or unauthorized transactions.
+
+Bank-Route explores how machine learning can automate the initial complaint triage process.
+
+## 2. Proposed Solution
+
+A supervised machine learning pipeline that processes complaint text and produces three outputs:
+
+- **Category:** Identifies the financial product associated with the complaint.
+- **Priority:** Classifies urgency as High, Medium, or Low.
+- **Department:** Suggests the responsible banking department based on the predicted category.
+
+### ML Pipeline
+
+```text
+Customer Complaint
+        |
+        ▼
+   Text Cleaning
+        |
+        ▼
+  TF-IDF Vectorization
+        |
+        ▼
+ Machine Learning Models
+        |
+   ┌────┴────┐
+   ▼         ▼
+Category  Priority
+   |
+   ▼
+Department Mapping
+```
+
+The system provides recommendations for human review. Final decisions remain with banking staff.
+
+---
+
+## 3. Model Performance
+
+**Dataset split:** 80% Training (13,496) | 20% Testing (3,374)
+
+### Category Classification
+
+Nine financial product categories.
 
 | Model | Accuracy | Weighted F1 |
-|---|---|---|
-| **SVM (LinearSVC)** | **0.8388** | **0.8386** |
-| Logistic Regression | 0.8370 | 0.8375 |
-| Random Forest | 0.8079 | 0.8064 |
-| Naive Bayes | 0.7543 | 0.7241 |
+|---|---:|---:|
+| **Linear SVM** | **83.88%** | **83.86%** |
+| Logistic Regression | 83.70% | 83.75% |
+| Random Forest | 80.79% | 80.64% |
+| Naive Bayes | 75.43% | 72.41% |
 
-The SVM is the deployed category model. It predicts Mortgage and Student loan best (F1 = 0.93) and Payday loan worst (F1 = 0.69). Most errors happen between categories that share vocabulary, such as Consumer Loan and Debt collection.
+**Selected model:** Linear SVM
 
-### Priority prediction (High / Medium / Low)
+- Best-performing categories: Mortgage and Student Loan (F1 = 0.93).
+- Weakest category: Payday Loan (F1 = 0.69).
+- Common confusion: Consumer Loan and Debt Collection.
 
-| Model | Accuracy | Weighted F1 | Recall of High |
-|---|---|---|---|
-| **Logistic Regression** | **0.6621** | **0.6639** | **0.7174** |
-| Random Forest | 0.6517 | 0.6462 | 0.4112 |
-| SVM (LinearSVC) | 0.6381 | 0.6386 | 0.5668 |
-| Naive Bayes | 0.6218 | 0.5927 | 0.1506 |
+### Priority Classification
 
-Recall of the High class is tracked separately because missing an urgent complaint is worse than wrongly flagging a normal one.
+Three priority levels: High, Medium, Low.
+
+| Model | Accuracy | Weighted F1 | High Recall |
+|---|---:|---:|---:|
+| **Logistic Regression** | **66.21%** | **66.39%** | **71.74%** |
+| Random Forest | 65.17% | 64.62% | 41.12% |
+| Linear SVM | 63.81% | 63.86% | 56.68% |
+| Naive Bayes | 62.18% | 59.27% | 15.06% |
+
+**Selected model:** Logistic Regression
+
+High-priority recall is evaluated separately because missing an urgent complaint is more consequential than incorrectly flagging a normal complaint.
 
 ---
 
-## Dataset
+## 4. Dataset
 
-- **Name:** US Consumer Finance Complaints (CFPB), on Kaggle
-- **Link:** https://www.kaggle.com/datasets/kaggle/us-consumer-finance-complaints
-- **License:** U.S. Government work, public domain
-- **Raw size:** 555,957 complaints, of which 66,806 include the customer's written narrative. Only those rows can be used for text classification.
-- **Final sample:** 16,870 complaints across 9 bank-related product categories, with each large class capped at 2,500 to reduce imbalance.
-- **Excluded categories:** Credit reporting (concerns credit bureaus, not banks) and Other financial service (only 109 rows).
+**Source:** [US Consumer Financial Protection Bureau (CFPB) Complaints Dataset](https://www.kaggle.com/datasets/kaggle/us-consumer-finance-complaints)
 
-The dataset is not included in this repository. Download it from Kaggle to re-run the notebook.
+| Dataset Detail | Count |
+|---|---:|
+| Raw records | 555,957 |
+| Records with narratives | 66,806 |
+| Final selected dataset | 16,870 |
+| Product categories | 9 |
+| Training records | 13,496 |
+| Testing records | 3,374 |
 
-### How priority labels were created
+### Preprocessing
 
-The dataset has no priority column, so we built a transparent rule-based rubric from the `issue` field:
+- Removed records without customer narratives.
+- Selected nine relevant financial product categories.
+- Capped large categories at 2,500 records.
+- Cleaned complaint text.
+- Applied TF-IDF with unigrams and bigrams.
+- Used 20,000 maximum features.
 
-- **High:** fraud, unauthorized transactions, identity theft, illegal threats, foreclosure, debt not owed
-- **Medium:** billing disputes, fees, payments, account closing, loan servicing, ATM problems
-- **Low:** everything else
+### Priority Label Creation
 
-The models never see the `issue` column. They learn urgency only from the complaint text.
+The original dataset does not contain priority labels. A rule-based rubric was developed using the `issue` field.
 
-### Department routing
-
-The category is mapped to a department using a fixed table defined by the team:
-
-| Category | Department |
+| Priority | Examples |
 |---|---|
-| Bank account or service | Accounts & Deposits Team |
-| Credit card, Prepaid card | Card Services Team |
-| Consumer Loan, Payday loan | Retail Lending Team |
-| Mortgage | Mortgage & Home Loans Team |
-| Student loan | Education Loans Team |
-| Debt collection | Recovery & Collections Team |
-| Money transfers | Payments & Remittances Team |
+| High | Fraud, unauthorized transactions, identity theft, foreclosure, debt not owed |
+| Medium | Billing disputes, fees, payments, account closing, ATM problems |
+| Low | Remaining issues |
+
+The `issue` field was used only to generate priority labels. The priority model uses complaint narratives as input.
 
 ---
 
-## Repository Structure
+## 5. Department Mapping
 
-```
-.
-├── app.py                                          Streamlit web app
-├── category_model.pkl                              Trained category classifier (SVM)
-├── tfidf_vectorizer.pkl                            Trained TF-IDF vectorizer
-├── usa-endtoend-consumer-complaints-project.ipynb  Full pipeline: EDA, training, evaluation
-└── AzharAli_ProjectProposal.pdf                    Original project proposal
-```
+Predicted product categories are mapped to departments using a predefined routing table.
+
+| Product Category | Department |
+|---|---|
+| Bank Account or Service | Accounts & Deposits |
+| Credit Card / Prepaid Card | Card Services |
+| Consumer Loan / Payday Loan | Retail Lending |
+| Mortgage | Mortgage & Home Loans |
+| Student Loan | Education Loans |
+| Debt Collection | Recovery & Collections |
+| Money Transfers | Payments & Remittances |
 
 ---
 
-## Run the App Locally
+## 6. Technology Stack
 
-**1. Install dependencies**
+- **Language:** Python
+- **Data Processing:** Pandas, NumPy
+- **Machine Learning:** Scikit-learn
+- **NLP:** TF-IDF Vectorization
+- **Algorithms:** Linear SVM, Logistic Regression, Random Forest, Naive Bayes
+- **Visualization:** Matplotlib
+- **Model Persistence:** Joblib
+- **Web Application:** Streamlit
+
+---
+
+## 7. Repository Structure
+
+```text
+Bank-Route/
+│
+├── app.py
+├── category_model.pkl
+├── tfidf_vectorizer.pkl
+├── usa-endtoend-consumer-complaints-project.ipynb
+└── AzharAli_ProjectProposal.pdf
+```
+
+| File | Description |
+|---|---|
+| `app.py` | Streamlit web application |
+| `category_model.pkl` | Trained SVM classifier |
+| `tfidf_vectorizer.pkl` | Fitted TF-IDF vectorizer |
+| `.ipynb` | Data analysis, preprocessing, training and evaluation |
+| `.pdf` | Original project proposal |
+
+---
+
+## 8. Run Locally
+
+**Clone the repository**
 
 ```bash
-pip install streamlit scikit-learn joblib
+git clone YOUR_REPOSITORY_URL
+cd Bank-Route
 ```
 
-**2. Start the app** (from the folder that contains `app.py` and both `.pkl` files)
+**Install dependencies**
+
+```bash
+pip install streamlit scikit-learn joblib pandas numpy matplotlib
+```
+
+**Run the application**
 
 ```bash
 streamlit run app.py
 ```
 
-**3. Use it:** paste a complaint into the text box and click **Route & Classify Complaint**.
+Enter a customer complaint and click **Route & Classify Complaint**.
 
-Note: the `.pkl` files were saved with scikit-learn on Kaggle. If loading fails, install the same scikit-learn version that was used for training.
-
----
-
-## Tech Stack
-
-Python, Pandas, NumPy, Scikit-learn, Matplotlib, TF-IDF (unigrams and bigrams, 20,000 features), Streamlit, Joblib
+The dataset is not included in the repository. Download it separately from Kaggle to reproduce the notebook.
 
 ---
 
-## Current Status and Limitations
+## 9. Current Limitations
 
-- **The Streamlit app uses a rule-based priority engine.** It matches keywords such as "fraud" or "unauthorized" in the text. The ML priority model (Logistic Regression) was evaluated in the notebook but is not saved or loaded by the app. If a `priority_model.pkl` file is added, the app uses it automatically.
-- **The app shows category and priority.** The department mapping is implemented in the notebook's `triage()` function but is not shown in the app yet.
-- **Priority labels are proxies.** They were created by our own rubric, not by real bank staff, so priority accuracy (about 66%) should be treated as a suggestion only.
-- **US data.** The model is trained on CFPB complaints, not on Pakistani bank complaints, so wording and categories differ from local systems.
-- **Single-label output.** Complaints that describe several problems at once are hard to classify with one category.
-- **Department mapping is an assumption.** Real banks organize their teams differently.
-
-## Future Work
-
-- Save the trained priority model and use it in the app.
-- Show the routed department in the app.
-- Train on real Pakistani complaints, including Urdu and Roman Urdu text.
-- Replace TF-IDF with transformer embeddings.
-- Add human review for low-confidence predictions.
+- The Streamlit application uses Linear SVM for category prediction.
+- Priority prediction currently uses keyword-based rules. The evaluated Logistic Regression model is not integrated.
+- Department mapping is implemented in the notebook but not displayed in the application.
+- Priority labels are based on a team-designed rubric, not actual bank-assigned priorities.
+- The dataset contains US complaints and may not represent Pakistani banking complaints.
+- The system supports single-label classification.
 
 ---
 
-## Team
+## 10. Team
 
 | Name | Role |
 |---|---|
 | Azhar Ali | Team Lead |
 | Khadija Shahid | Data Analyst |
 | Faryal Gul | System Design |
+
+**Instructor:** Dr. Ismail Mangrio  
+**Institution:** Sukkur IBA University
+
+---
+
+**Bank-Route | Machine Learning | Natural Language Processing | Financial Technology**
